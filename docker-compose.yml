@@ -1,19 +1,24 @@
 version: '3.7'
 
 services:
+
   db:
-    image: mysql:5.7
-    container_name: db
+    image: mariadb:10.6.4-focal
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: db
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
+      MARIADB_ROOT_PASSWORD: password
+      MYSQL_DATABASE: database
     ports:
-      - "3306:3306"
+      - 3306:3306
     volumes:
-      - ./db:/var/lib/mysql
+       - ./db-data:/var/lib/mysql
 
-  app:
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
+volumes:
+  data:
   

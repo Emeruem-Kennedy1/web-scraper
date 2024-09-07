@@ -133,3 +133,6 @@ dist
 
 # vscode settings
 .vscode
+
+# 
+db-data/

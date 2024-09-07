@@ -1,6 +1,9 @@
 import { Scrapper } from "./scrapper";
 import { getArtistsOnPage } from "./get_artists";
+import { PrismaClient } from "@prisma/client";
 // const categoriesSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1".split("");
+
+const prisma = new PrismaClient();
 
 const webScrapper = new Scrapper(10);
 
@@ -8,6 +11,20 @@ const webScrapper = new Scrapper(10);
 
 async function main() {
   try {
+    const newArtist = await prisma.artist.create({
+      data: {
+        name: "Test Artist",
+      }
+    })
+    console.log("Created Artist", newArtist);
+
+    // find artist
+    const artist = await prisma.artist.findMany({
+      where: {
+        name: "Test Artist",
+      }
+    });
+    console.log(artist);
     await webScrapper.openBrowser();
 
     // const promises = categoriesSet.map(async (category) => {
@@ -31,4 +48,8 @@ async function main() {
 console.time("Execution Time");
 main().then(() => {
   console.timeEnd("Execution Time");
+}).catch((e) => {
+  console.error(e);
+}).finally(async () => {
+  await prisma.$disconnect();
 });
