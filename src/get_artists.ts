@@ -11,7 +11,7 @@ const siteMapUrl = `${BASE_URL}/sitemap/artist`;
  * @param callback Callback function to be called after the page has been loaded
  * @returns 
  */
-export async function getNumberOfPagesForCategory(page: Page, category: string, callback = () => { }) {
+async function getNumberOfPagesForCategory(page: Page, category: string, callback = () => { }) {
     await page.goto(`${siteMapUrl}/${category}`, { waitUntil: "domcontentloaded" });
     const count = await page.evaluate(() => {
         const div = document.querySelector(".fullContent");
@@ -25,3 +25,18 @@ export async function getNumberOfPagesForCategory(page: Page, category: string, 
     callback();
     return count;
 }
+
+async function getArtistsOnPage(page: Page, category: string, pageNumber: number, callback = () => { }) {
+    await page.goto(`${siteMapUrl}/${category}/${pageNumber}`, { waitUntil: "domcontentloaded" });
+    const artists = await page.evaluate(() => {
+        const div = document.querySelector(".fullContent");
+        const aTags = div ? div.querySelectorAll("a") : [];
+        const artistNames = Array.from(aTags).map((a) => a.textContent);
+        return artistNames;
+    });
+
+    callback();
+    return artists;
+}
+
+export { getNumberOfPagesForCategory, getArtistsOnPage }; 
