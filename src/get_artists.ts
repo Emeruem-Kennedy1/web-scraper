@@ -12,7 +12,16 @@ const siteMapUrl = `${BASE_URL}/sitemap/artist`;
  * @returns 
  */
 async function getNumberOfPagesForCategory(page: Page, category: string, callback = () => { }) {
-    await page.goto(`${siteMapUrl}/${category}`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${siteMapUrl}/${category}`, { waitUntil: "networkidle2" });
+    // Wait for Cloudflare challenge to pass (adjust timeout as needed)
+    await page.waitForFunction(() => {
+        return !document.querySelector('div.cf-browser-verification');
+    }, { timeout: 30000 });
+
+    // Add a random delay to mimic human behavior
+    await page.evaluate(() => {
+        return new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 3000) + 1000));
+    });
     const count = await page.evaluate(() => {
         const div = document.querySelector(".fullContent");
         const aTags = div ? div.querySelectorAll("a") : [];
@@ -28,6 +37,17 @@ async function getNumberOfPagesForCategory(page: Page, category: string, callbac
 
 async function getArtistsOnPage(page: Page, category: string, pageNumber: number, callback = () => { }) {
     await page.goto(`${siteMapUrl}/${category}/${pageNumber}`, { waitUntil: "domcontentloaded" });
+    
+    // Wait for Cloudflare challenge to pass (adjust timeout as needed)
+    await page.waitForFunction(() => {
+        return !document.querySelector('div.cf-browser-verification');
+    }, { timeout: 30000 });
+
+    // Add a random delay to mimic human behavior
+    await page.evaluate(() => {
+        return new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 3000) + 1000));
+    });
+    
     const artists = await page.evaluate(() => {
         const div = document.querySelector(".fullContent");
         const aTags = div ? div.querySelectorAll("a") : [];
