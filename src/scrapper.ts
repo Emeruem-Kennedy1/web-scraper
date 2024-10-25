@@ -41,6 +41,8 @@ export class Scrapper {
             executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
             headless: false,
             defaultViewport: null,
+            // 10 minutes
+            protocolTimeout: 6000000, 
         });
 
         const pages = await this.browser.pages();

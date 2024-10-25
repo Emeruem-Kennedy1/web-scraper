@@ -8,26 +8,42 @@ datasource db {
 }
 
 model Artist {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  songs     Song[]
+  id             Int           @id @default(autoincrement())
+  name           String        @unique
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  mainArtistSongs SongArtist[] @relation("MainArtist")
+  featuredSongs  SongArtist[] @relation("FeaturedArtist")
 }
 
 model Song {
-  id            Int      @id @default(autoincrement())
+  id            Int          @id @default(autoincrement())
   title         String
-  artistId      Int      @map("artist_id")
   releaseYear   Int?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  artist        Artist   @relation(fields: [artistId], references: [id])
-  genres        Genre[]  @relation("SongToGenre")
-  samplesUsed   Sample[] @relation("SampleUsedInSong")
-  sampledInSongs Sample[] @relation("SongSampledIn")
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  artists       SongArtist[]
+  genres        Genre[]      @relation("SongToGenre")
+  samplesUsed   Sample[]     @relation("SampleUsedInSong")
+  sampledInSongs Sample[]    @relation("SongSampledIn")
+}
 
-  @@index([artistId], map: "Song_artist_id_fkey")
+model SongArtist {
+  id        Int      @id @default(autoincrement())
+  song      Song     @relation(fields: [songId], references: [id])
+  songId    Int
+  artist    Artist   @relation("MainArtist", fields: [artistId], references: [id])
+  artistId  Int
+  featuredArtist Artist? @relation("FeaturedArtist", fields: [featuredArtistId], references: [id])
+  featuredArtistId Int?
+  isMainArtist Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([songId, artistId, isMainArtist])
+  @@index([songId])
+  @@index([artistId])
+  @@index([featuredArtistId])
 }
 
 model Genre {
@@ -48,6 +64,6 @@ model Sample {
   sampledInSong   Song     @relation("SampleUsedInSong", fields: [sampledInSongId], references: [id])
 
   @@unique([originalSongId, sampledInSongId])
-  @@index([originalSongId], map: "Sample_original_song_id_fkey")
-  @@index([sampledInSongId], map: "Sample_sampled_in_song_id_fkey")
+  @@index([originalSongId])
+  @@index([sampledInSongId])
 }

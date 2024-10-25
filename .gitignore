@@ -138,3 +138,9 @@ dist
 db-data/
 progress.json
 category-page-counts-2024-09-26T01-41-39.424Z.json
+
+
+.venv/
+
+
+.ds_store
