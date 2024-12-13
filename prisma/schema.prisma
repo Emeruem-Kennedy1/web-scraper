@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_URL")
+  url      = "mysql://kendo1:kendo123@172.29.119.2/ghopper?ssl=0"//env("DATABASE_URL")
 }
 
 model Artist {
@@ -12,8 +12,7 @@ model Artist {
   name           String        @unique
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
-  mainArtistSongs SongArtist[] @relation("MainArtist")
-  featuredSongs  SongArtist[] @relation("FeaturedArtist")
+  songs          SongArtist[]
 }
 
 model Song {
@@ -32,10 +31,8 @@ model SongArtist {
   id        Int      @id @default(autoincrement())
   song      Song     @relation(fields: [songId], references: [id])
   songId    Int
-  artist    Artist   @relation("MainArtist", fields: [artistId], references: [id])
+  artist    Artist   @relation(fields: [artistId], references: [id])
   artistId  Int
-  featuredArtist Artist? @relation("FeaturedArtist", fields: [featuredArtistId], references: [id])
-  featuredArtistId Int?
   isMainArtist Boolean
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -43,7 +40,6 @@ model SongArtist {
   @@unique([songId, artistId, isMainArtist])
   @@index([songId])
   @@index([artistId])
-  @@index([featuredArtistId])
 }
 
 model Genre {

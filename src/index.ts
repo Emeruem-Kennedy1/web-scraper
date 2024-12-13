@@ -279,9 +279,6 @@ async function scrapeSampledInSongs(artist: string, song: string) {
   }
 }
 
-const artist = "A+";
-const song = "Euphoria";
-
 async function scrapeAllArtistSongs(artist: string) {
   const baseUrl = buildUrl(artist);
   const scrapper = new Scrapper(1, 60);
@@ -336,7 +333,9 @@ async function scrapeMainPage(artist: string, song: string) {
 // scrapeSampledInSongs(artist, song, pageNumber)
 
 // scrapeAllSongsSampledIn(artist, song)
+const artist = "Coi Leray";
+const song = "Players";
 
-// scrapeMainPage(artist, song);
+scrapeMainPage(artist, song);
 
-scrapeAllArtistSongs(artist);
+// scrapeAllArtistSongs(artist);

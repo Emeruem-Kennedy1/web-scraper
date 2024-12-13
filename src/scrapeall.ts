@@ -27,7 +27,7 @@ const logger = winston.createLogger({
 });
 
 async function scrapeArtistPages(batchSize: number = 100, startId: number = 1) {
-  const scrapper = new Scrapper(10, 100); // 5 concurrent pages, 60 requests per minute
+  const scrapper = new Scrapper(20, 150); // 5 concurrent pages, 60 requests per minute
   await scrapper.openBrowser();
 
   try {
@@ -265,7 +265,7 @@ async function saveArtistContent(artistId: number, content: any[]) {
   }
 }
 
-scrapeArtistPages(100, 1103).catch((error) => {
+scrapeArtistPages(100, 23682).catch((error) => {
   logger.error("An error occurred during artist scraping:", error);
   process.exit(1);
 });

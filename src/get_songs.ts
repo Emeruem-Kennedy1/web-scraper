@@ -106,7 +106,6 @@ async function getAllArtistContent(
   let allContent: any[] = [];
   let currentPage = 1;
   let lastPage: number = 1;
-  console.log(artist);
 
   do {
     const url = currentPage === 1 ? baseUrl : `${baseUrl}?sp=${currentPage}`;
@@ -249,20 +248,66 @@ async function scrapeSongDetailsPage(page: Page, url: string) {
       return element ? element.textContent?.trim() : null;
     };
 
+    const parseArtists = (artistCell: HTMLElement) => {
+      const artistText = artistCell.innerHTML;
+      let mainArtists: string[] = [];
+      let featuringArtists: string[] = [];
+
+      // Split by "feat." to separate main artists from featuring artists
+      const parts = artistText.split(/\s+feat\.\s+/);
+
+      // Process main artists
+      if (parts[0]) {
+        mainArtists = parts[0]
+          .split(/\s+and\s+/)
+          .map((artist) => {
+            const match = artist.match(/<a[^>]*>([^<]+)<\/a>/);
+            return match
+              ? match[1].trim()
+              : artist.replace(/<[^>]+>/g, "").trim();
+          })
+          .filter((artist) => artist && artist !== "and");
+      }
+
+      // Process featuring artists if they exist
+      if (parts[1]) {
+        featuringArtists = parts[1]
+          .split(/\s+and\s+/)
+          .map((artist) => {
+            const match = artist.match(/<a[^>]*>([^<]+)<\/a>/);
+            return match
+              ? match[1].trim()
+              : artist.replace(/<[^>]+>/g, "").trim();
+          })
+          .filter((artist) => artist && artist !== "and");
+      }
+
+      return { mainArtists, featuringArtists };
+    };
+
     const mainGenre = getTextContent(".tooltip-genre");
 
     const scrapeSampleTable = (tableSelector: string) => {
       const rows = document.querySelectorAll(`${tableSelector} tbody tr`);
-      return Array.from(rows).map((row) => ({
-        songName: row.querySelector(".tdata__td2 a")?.textContent?.trim() || "",
-        artistName:
-          row.querySelector(".tdata__td3 a")?.textContent?.trim() || "",
-        year:
-          row.querySelector(".tdata__td3:nth-child(4)")?.textContent?.trim() ||
-          "",
-        sampleType:
-          row.querySelector(".tdata__badge")?.textContent?.trim() || "",
-      }));
+      return Array.from(rows).map((row) => {
+        const artistCell = row.querySelector(".tdata__td3");
+        const { mainArtists, featuringArtists } = parseArtists(
+          artistCell as HTMLElement
+        );
+
+        return {
+          songName:
+            row.querySelector(".tdata__td2 a")?.textContent?.trim() || "",
+          mainArtists,
+          featuringArtists,
+          year:
+            row
+              .querySelector(".tdata__td3:nth-child(4)")
+              ?.textContent?.trim() || "",
+          sampleType:
+            row.querySelector(".tdata__badge")?.textContent?.trim() || "",
+        };
+      });
     };
 
     const containsSamples = scrapeSampleTable(
@@ -297,17 +342,11 @@ async function scrapeSongDetails(page: Page, url: string) {
   );
 
   const songDetails = await page.evaluate(() => {
-    const getTextContent = (selector: string) => {
-      console.log(document.querySelector(selector));
-      return document.querySelector(selector)?.textContent?.trim() || null;
-    };
-
     const getGenre = () => {
       const genreElement = document.querySelector(
         'a[href^="/genre/"] span[itemprop="genre"]'
       );
       if (genreElement) {
-        // Create a temporary element to handle HTML entities
         const temp = document.createElement("div");
         temp.innerHTML = genreElement.innerHTML;
         return temp.textContent?.trim().split("/ ") || null;
@@ -315,7 +354,43 @@ async function scrapeSongDetails(page: Page, url: string) {
       return null;
     };
 
-    const mainGenre = getGenre();
+    const parseArtists = (artistCell: HTMLElement) => {
+      const artistText = artistCell.innerHTML;
+      let mainArtists: string[] = [];
+      let featuringArtists: string[] = [];
+
+      // Split by "feat." to separate main artists from featuring artists
+      const parts = artistText.split(/\s+feat\.\s+/);
+
+      // Process main artists
+      if (parts[0]) {
+        mainArtists = parts[0]
+          .split(/\s+and\s+/)
+          .map((artist) => {
+            // Extract text from anchor tags or use plain text
+            const match = artist.match(/<a[^>]*>([^<]+)<\/a>/);
+            return match
+              ? match[1].trim()
+              : artist.replace(/<[^>]+>/g, "").trim();
+          })
+          .filter((artist) => artist && artist !== "and");
+      }
+
+      // Process featuring artists if they exist
+      if (parts[1]) {
+        featuringArtists = parts[1]
+          .split(/\s+and\s+/)
+          .map((artist) => {
+            const match = artist.match(/<a[^>]*>([^<]+)<\/a>/);
+            return match
+              ? match[1].trim()
+              : artist.replace(/<[^>]+>/g, "").trim();
+          })
+          .filter((artist) => artist && artist !== "and");
+      }
+
+      return { mainArtists, featuringArtists };
+    };
 
     const scrapeSampleTable = (sectionTitle: string) => {
       const section = Array.from(document.querySelectorAll(".subsection")).find(
@@ -328,16 +403,25 @@ async function scrapeSongDetails(page: Page, url: string) {
       if (!section) return { data: [], hasSeeAll: false };
 
       const rows = section.querySelectorAll(".table.tdata tbody tr");
-      const data = Array.from(rows).map((row) => ({
-        songName: row.querySelector(".tdata__td2 a")?.textContent?.trim() || "",
-        artistName:
-          row.querySelector(".tdata__td3 a")?.textContent?.trim() || "",
-        year:
-          row.querySelector(".tdata__td3:nth-child(4)")?.textContent?.trim() ||
-          "",
-        sampleType:
-          row.querySelector(".tdata__badge")?.textContent?.trim() || "",
-      }));
+      const data = Array.from(rows).map((row) => {
+        const artistCell = row.querySelector(".tdata__td3");
+        const { mainArtists, featuringArtists } = parseArtists(
+          artistCell as HTMLElement
+        );
+
+        return {
+          songName:
+            row.querySelector(".tdata__td2 a")?.textContent?.trim() || "",
+          mainArtists,
+          featuringArtists,
+          year:
+            row
+              .querySelector(".tdata__td3:nth-child(4)")
+              ?.textContent?.trim() || "",
+          sampleType:
+            row.querySelector(".tdata__badge")?.textContent?.trim() || "",
+        };
+      });
 
       const seeAllButton = section.querySelector(".btn-wrapper a");
       const hasSeeAll =
@@ -349,7 +433,7 @@ async function scrapeSongDetails(page: Page, url: string) {
     };
 
     return {
-      mainGenre,
+      mainGenre: getGenre(),
       containsSamples: scrapeSampleTable("Contains samples of"),
       sampledIn: scrapeSampleTable("Sampled in"),
     };
@@ -361,7 +445,8 @@ async function scrapeSongDetails(page: Page, url: string) {
 async function scrapeAllPages(page: Page, url: string) {
   let allContent: {
     songName: string;
-    artistName: string;
+    mainArtists: string[];
+    featuringArtists: string[];
     year: string;
     sampleType: string;
   }[] = [];
@@ -372,20 +457,71 @@ async function scrapeAllPages(page: Page, url: string) {
     const pageUrl = currentPage === 1 ? url : `${url}?cp=${currentPage}`;
     await page.goto(pageUrl, { waitUntil: "domcontentloaded" });
 
+    // Wait for Cloudflare challenge to pass
+    await page.waitForFunction(
+      () => !document.querySelector("div.cf-browser-verification"),
+      { timeout: 30000 }
+    );
+
     const pageContent = await page.evaluate(() => {
+      const parseArtists = (artistCell: HTMLElement) => {
+        const artistText = artistCell.innerHTML;
+        let mainArtists: string[] = [];
+        let featuringArtists: string[] = [];
+
+        // Split by "feat." to separate main artists from featuring artists
+        const parts = artistText.split(/\s+feat\.\s+/);
+
+        // Process main artists
+        if (parts[0]) {
+          mainArtists = parts[0]
+            .split(/\s+and\s+/)
+            .map((artist) => {
+              const match = artist.match(/<a[^>]*>([^<]+)<\/a>/);
+              return match
+                ? match[1].trim()
+                : artist.replace(/<[^>]+>/g, "").trim();
+            })
+            .filter((artist) => artist && artist !== "and");
+        }
+
+        // Process featuring artists if they exist
+        if (parts[1]) {
+          featuringArtists = parts[1]
+            .split(/\s+and\s+/)
+            .map((artist) => {
+              const match = artist.match(/<a[^>]*>([^<]+)<\/a>/);
+              return match
+                ? match[1].trim()
+                : artist.replace(/<[^>]+>/g, "").trim();
+            })
+            .filter((artist) => artist && artist !== "and");
+        }
+
+        return { mainArtists, featuringArtists };
+      };
+
       const rows = document.querySelectorAll("table.table.tdata tbody tr");
-      return Array.from(rows).map((row) => ({
-        songName:
-          row.querySelector(".tdata__td2 a.trackName")?.textContent?.trim() ||
-          "",
-        artistName:
-          row.querySelector(".tdata__td3 a")?.textContent?.trim() || "",
-        year:
-          row.querySelector(".tdata__td3:nth-child(4)")?.textContent?.trim() ||
-          "",
-        sampleType:
-          row.querySelector(".tdata__badge")?.textContent?.trim() || "",
-      }));
+      return Array.from(rows).map((row) => {
+        const artistCell = row.querySelector(".tdata__td3");
+        const { mainArtists, featuringArtists } = parseArtists(
+          artistCell as HTMLElement
+        );
+
+        return {
+          songName:
+            row.querySelector(".tdata__td2 a.trackName")?.textContent?.trim() ||
+            "",
+          mainArtists,
+          featuringArtists,
+          year:
+            row
+              .querySelector(".tdata__td3:nth-child(4)")
+              ?.textContent?.trim() || "",
+          sampleType:
+            row.querySelector(".tdata__badge")?.textContent?.trim() || "",
+        };
+      });
     });
 
     allContent = allContent.concat(pageContent);
@@ -426,6 +562,123 @@ async function scrapeComprehensiveSongDetails(page: Page, baseUrl: string) {
   return songDetails;
 }
 
+async function scrapeGenreOnly(page: Page, url: string) {
+  await page.goto(url, { waitUntil: "domcontentloaded" });
+
+  // Wait for Cloudflare challenge to pass
+  await page.waitForFunction(
+    () => !document.querySelector("div.cf-browser-verification"),
+    { timeout: 30000 }
+  );
+
+  // Add a small random delay
+  await page.evaluate(() => {
+    return new Promise((resolve) =>
+      setTimeout(resolve, Math.floor(Math.random() * 1000) + 500)
+    );
+  });
+
+  const genreInfo = await page.evaluate(() => {
+    const genreElement = document.querySelector(
+      'a[href^="/genre/"] span[itemprop="genre"]'
+    );
+    if (genreElement) {
+      // Create a temporary element to handle HTML entities
+      const temp = document.createElement("div");
+      temp.innerHTML = genreElement.innerHTML;
+      return temp.textContent?.trim().split("/ ") || null;
+    }
+    return null;
+  });
+
+  return { mainGenre: genreInfo };
+}
+
+interface SongWithRelations {
+  songName: string;
+  mainArtists: string[];
+  featuringArtists: string[];
+  year: string;
+  sampleType: string;
+  url: string;
+}
+
+// Add these functions to your get_songs.ts file
+async function getMaxSamplesCount(page: Page): Promise<number> {
+  return await page.evaluate(() => {
+    const header = document.querySelector(".section-header-title");
+    if (header) {
+      const match = header.textContent?.match(/Sampled in (\d+) songs/);
+      return match ? parseInt(match[1]) : 0;
+    }
+    return 0;
+  });
+}
+
+async function getSampleUrlsWithLimit(
+  page: Page,
+  url: string,
+  limit: number = 1000
+): Promise<SongWithRelations[]> {
+  await page.goto(url, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(
+    () => !document.querySelector("div.cf-browser-verification"),
+    { timeout: 30000 }
+  );
+
+  const totalSamples = await getMaxSamplesCount(page);
+  const pagesToScrape = Math.min(
+    Math.ceil(limit / 20),
+    Math.ceil(totalSamples / 20)
+  ); // 20 items per page
+
+  let allSamples: SongWithRelations[] = [];
+
+  for (let currentPage = 1; currentPage <= pagesToScrape; currentPage++) {
+    const pageUrl = currentPage === 1 ? url : `${url}?cp=${currentPage}`;
+    await page.goto(pageUrl, { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(
+      () => !document.querySelector("div.cf-browser-verification"),
+      { timeout: 30000 }
+    );
+
+    const pageSamples = await page.evaluate(() => {
+      const rows = document.querySelectorAll("table.table.tdata tbody tr");
+      return Array.from(rows).map((row) => {
+        const songLink = row.querySelector(".tdata__td2 a.trackName");
+        const url = songLink?.getAttribute("href") || "";
+
+        return {
+          songName: songLink?.textContent?.trim() || "",
+          mainArtists: [], // We'll parse this later to reduce complexity
+          featuringArtists: [],
+          year:
+            row
+              .querySelector(".tdata__td3:nth-child(4)")
+              ?.textContent?.trim() || "",
+          sampleType:
+            row.querySelector(".tdata__badge")?.textContent?.trim() || "",
+          url: url,
+        };
+      });
+    });
+
+    allSamples = allSamples.concat(pageSamples);
+
+    if (allSamples.length >= limit) {
+      allSamples = allSamples.slice(0, limit);
+      break;
+    }
+
+    // Add delay between pages
+    await new Promise((resolve) =>
+      setTimeout(resolve, 2000 + Math.random() * 1000)
+    );
+  }
+
+  return allSamples;
+}
+
 export {
   getSampledInContentOnPage,
   getArtistContentOnPage,
@@ -433,4 +686,6 @@ export {
   scrapeSongDetailsPage,
   getAllSampledInContent,
   scrapeComprehensiveSongDetails,
+  scrapeGenreOnly,
+  getSampleUrlsWithLimit,
 };
