@@ -37,7 +37,7 @@ This project provides a comprehensive solution for:
 
 - Node.js
 - TypeScript
-- MySQL database
+- MariaDB or any MySQL database (Note: If you don't use MariaDB you might need to do you'll need to do more setup)
 - Google Chrome (for headless browser operations)
 
 ## Setup
